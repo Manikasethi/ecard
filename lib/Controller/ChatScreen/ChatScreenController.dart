@@ -13,6 +13,7 @@ class ChatScreenController extends GetxController with SingleGetTickerProviderMi
   final screens = [
     const SocialPage(),
     CommunityChatPage(),
+    
     const ChatScreenHandler(isComunityPage: false),
   ];
 

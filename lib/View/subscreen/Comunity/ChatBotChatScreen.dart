@@ -18,24 +18,22 @@ import '../../../Controller/ChatScreen/ChatController.dart';
 import '../../../Resource/color_handler.dart';
 import '../../../Resource/icon_handler.dart';
 
-
-
-
-
-
+import 'package:get/get.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+import 'package:keyboard_height_plugin/keyboard_height_plugin.dart';
 
 class ChatController extends GetxController {
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   var messages = <types.Message>[].obs;
-  final user = types.User(id: FirebaseAuth.instance.currentUser!.uid).obs;
+  final user =
+      types.User(id: FirebaseAuth.instance.currentUser?.uid ?? '').obs; //!
   //User who get messages
+
+  final keyboardOpen = RxBool(false);
 
   late final String getUser;
   ChatController(this.getUser);
-
-
-
 
   DateTime now = DateTime.now();
   late DateTime date = DateTime(now.year, now.month, now.day);
@@ -43,6 +41,7 @@ class ChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
     print("get user");
     print(getUser);
     loadMessages();
@@ -110,7 +109,7 @@ class ChatController extends GetxController {
 
   void sendTextMessage(String text) {
     final textMessage = types.TextMessage(
-      author:user.value,
+      author: user.value,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       id: const Uuid().v4(),
       text: text,
@@ -142,21 +141,7 @@ class ChatController extends GetxController {
   void updateMessage(int index, types.Message updatedMessage) {}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ChatScreenHandler extends StatelessWidget {
+class ChatScreenHandler extends StatefulWidget {
   const ChatScreenHandler({
     super.key,
     this.isComunityPage = true,
@@ -171,132 +156,207 @@ class ChatScreenHandler extends StatelessWidget {
   final String ImgSrc;
 
   @override
+  State<ChatScreenHandler> createState() => _ChatScreenHandlerState();
+}
+
+class _ChatScreenHandlerState extends State<ChatScreenHandler> {
+  double _keyboardHeight1 = 0;
+  final KeyboardHeightPlugin _keyboardHeightPlugin = KeyboardHeightPlugin();
+
+  @override
   Widget build(BuildContext context) {
+    final ChatController controller =
+        Get.put(ChatController(widget.Uid), tag: widget.Uid);
 
-    final ChatController controller = Get.put(ChatController(Uid),tag: Uid);
-
+    @override
+    void initState() {
+      super.initState();
+      _keyboardHeightPlugin.onKeyboardHeightChanged((double height) {
+        setState(() {
+          _keyboardHeight1 = height;
+          print("my keyboard height is $_keyboardHeight1");
+        });
+      });
+    }
 
     return Scaffold(
-      appBar: isComunityPage
+      resizeToAvoidBottomInset: true,
+      backgroundColor: ColorHandler.bgColor,
+      appBar: widget.isComunityPage
           ? AppBar(
-        centerTitle: true,
-        backgroundColor: ColorHandler.bgColor,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            IconHandler.angle_left,
-            color: ColorHandler.normalFont,
-          ),
-        ),
-        title: Row(
-          children: [
-            SizedBox(
-              width: 35.sp,
-              height: 35.sp,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100.sp),
-                child: Image.network(
-                  ImgSrc,
-                  fit: BoxFit.fill,
+              centerTitle: true,
+              backgroundColor: ColorHandler.bgColor,
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(
+                  IconHandler.angle_left,
+                  color: ColorHandler.normalFont,
                 ),
               ),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-            Text(
-              FriendName,
-              style: TextStyle(
-                color: ColorHandler.normalFont,
-                fontWeight: FontWeight.normal,
-                fontSize: 20.sp,
-              ),
-              textDirection: TextDirection.ltr,
-              textAlign: TextAlign.left,
-            ),
-          ],
-        ),
-      )
-          : null,
-      body: Obx(
-            () => Chat(
-          messages: controller.messages.reversed.toList(),
-          bubbleBuilder: _bubbleBuilder,
-          onAttachmentPressed: () =>
-              _handleAttachmentPressed(context, controller),
-          onMessageTap: _handleMessageTap,
-          onPreviewDataFetched: _handlePreviewDataFetched,
-          onSendPressed: (types.PartialText message) =>
-              controller.sendTextMessage(message.text),
-          scrollToUnreadOptions: const ScrollToUnreadOptions(
-            lastReadMessageId: 'lastReadMessageId',
-            scrollOnOpen: true,
-          ),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          showUserAvatars: false,
-          showUserNames: false,
-          isLeftStatus: true,
-          user: controller.user.value,
-          theme: const DefaultChatTheme(
-            backgroundColor: ColorHandler.bgColor,
-            seenIcon: Text(
-              'read',
-              style: TextStyle(
-                fontSize: 10.0,
-              ),
-            ),
-          ),
-          messageWidthRatio: 0.80,
-        ),
-      ),
-    );
-  }
-
-  void _handleAttachmentPressed(BuildContext context,
-      ChatController controller) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext context) =>
-          SafeArea(
-            child: Container(
-              color: ColorHandler.bgColor.withOpacity(0.8),
-              height: 144,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleImageSelection(controller);
-                    },
-                    child: const Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text('Photo'),
+              title: Row(
+                children: [
+                  SizedBox(
+                    width: 35.sp,
+                    height: 35.sp,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100.sp),
+                      child: Image.network(
+                        widget.ImgSrc,
+                        fit: BoxFit.fill,
+                      ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleFileSelection(controller);
-                    },
-                    child: const Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text('File'),
-                    ),
+                  const SizedBox(
+                    width: 10,
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text('Cancel'),
+                  Text(
+                    widget.FriendName,
+                    style: TextStyle(
+                      color: ColorHandler.normalFont,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 20.sp,
                     ),
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
                   ),
                 ],
               ),
-            ),
+            )
+          : null,
+      body:
+
+          // Container(
+          //   color: Color.fromARGB(255, 242, 90, 145),
+          //   child: Text("data bfbfiuef iuwfwgfiuwg fiuwg fugwfiugwfgjhgfsghfjdsfhhgj gisg iusgisugviu bjfwjwsggdfiusgfygwefygwuegf wygfyuw wgfywgfuyw wg fuwgfwyg fywge fjgdhfgsjgf\sghfsjghf hsg fhsgf jsghfwyegwe fgjhgfhs gdfhgsdhfgshgfbvueugyugsgviusg viugsdviugsvgshdgvjhdgv hjgfvdg vjd gvdy gvjdygfugeugfgvegvjhdgfjgvdygvyugfvehvjshd herika ", style: TextStyle(fontSize: 35),)),
+
+          Builder(builder: (context) {
+        return SingleChildScrollView(
+          child:
+              KeyboardVisibilityBuilder(builder: (context, isKeyboardVisible) {
+            return SizedBox(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height - 175,
+              child: Obx(
+                () => Padding(
+                  //padding: EdgeInsets.only(bottom: isKeyboardOpen ? 6000.0 : 0), // Adjust padding as needed),
+                  padding: EdgeInsets.only(
+                      bottom:
+                          isKeyboardVisible ? 210.sp : 0.0), // Adjust as needed,
+                  child: Chat(
+                    messages: controller.messages.reversed.toList(),
+                    bubbleBuilder: _bubbleBuilder,
+                    onAttachmentPressed: () =>
+                        _handleAttachmentPressed(context, controller),
+                    onMessageTap: _handleMessageTap,
+                    onPreviewDataFetched: _handlePreviewDataFetched,
+                    onSendPressed: (types.PartialText message) =>
+                        controller.sendTextMessage(message.text),
+                    scrollToUnreadOptions: const ScrollToUnreadOptions(
+                      lastReadMessageId: 'lastReadMessageId',
+                      scrollOnOpen: true,
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    showUserAvatars: false,
+                    showUserNames: false,
+                    isLeftStatus: true,
+                    user: controller.user.value,
+                    theme: const DefaultChatTheme(
+                      backgroundColor: ColorHandler.bgColor,
+                      seenIcon: Text(
+                        'read',
+                        style: TextStyle(
+                          fontSize: 10.0,
+                        ),
+                      ),
+                    ),
+                    messageWidthRatio: 0.80,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      }),
+
+      //  Obx(
+      //       () => Chat(
+      //     messages: controller.messages.reversed.toList(),
+      //     bubbleBuilder: _bubbleBuilder,
+      //     onAttachmentPressed: () =>
+      //         _handleAttachmentPressed(context, controller),
+      //     onMessageTap: _handleMessageTap,
+      //     onPreviewDataFetched: _handlePreviewDataFetched,
+      //     onSendPressed: (types.PartialText message) =>
+      //         controller.sendTextMessage(message.text),
+      //     scrollToUnreadOptions: const ScrollToUnreadOptions(
+      //       lastReadMessageId: 'lastReadMessageId',
+      //       scrollOnOpen: true,
+      //     ),
+      //     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      //     showUserAvatars: false,
+      //     showUserNames: false,
+      //     isLeftStatus: true,
+      //     user: controller.user.value,
+      //     theme: const DefaultChatTheme(
+      //       backgroundColor: ColorHandler.bgColor,
+      //       seenIcon: Text(
+      //         'read',
+      //         style: TextStyle(
+      //           fontSize: 10.0,
+      //         ),
+      //       ),
+      //     ),
+      //     messageWidthRatio: 0.80,
+      //   ),
+      // ),
+    );
+  }
+
+  void _handleAttachmentPressed(
+      BuildContext context, ChatController controller) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) => SafeArea(
+        child: Container(
+          color: ColorHandler.bgColor.withOpacity(0.8),
+          height: 144,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _handleImageSelection(controller);
+                },
+                child: const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('Photo'),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _handleFileSelection(controller);
+                },
+                child: const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('File'),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('Cancel'),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -308,14 +368,12 @@ class ChatScreenHandler extends StatelessWidget {
     if (result != null && result.files.single.path != null) {
       final message = types.FileMessage(
         author: controller.user.value,
-        createdAt: DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
         id: const Uuid().v4(),
-        mimeType: lookupMimeType(result.files.single.path!),
+        mimeType: lookupMimeType(result.files.single.path ?? ''), //!
         name: result.files.single.name,
         size: result.files.single.size,
-        uri: result.files.single.path!,
+        uri: result.files.single.path ?? '', //!
       );
 
       controller.addMessage(message);
@@ -335,9 +393,7 @@ class ChatScreenHandler extends StatelessWidget {
 
       final message = types.ImageMessage(
         author: controller.user.value,
-        createdAt: DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
         height: image.height.toDouble(),
         id: const Uuid().v4(),
         name: result.name,
@@ -357,10 +413,11 @@ class ChatScreenHandler extends StatelessWidget {
 
       if (message.uri.startsWith('http')) {
         try {
-          final index = controller.messages.indexWhere((element) =>
-          element.id == message.id);
-          final updatedMessage = (controller.messages[index] as types
-              .FileMessage).copyWith(isLoading: true);
+          final index = controller.messages
+              .indexWhere((element) => element.id == message.id);
+          final updatedMessage =
+              (controller.messages[index] as types.FileMessage)
+                  .copyWith(isLoading: true);
 
           controller.updateMessage(index, updatedMessage);
 
@@ -375,10 +432,11 @@ class ChatScreenHandler extends StatelessWidget {
           //   await file.writeAsBytes(bytes);
           // }
         } finally {
-          final index = controller.messages.indexWhere((element) =>
-          element.id == message.id);
-          final updatedMessage = (controller.messages[index] as types
-              .FileMessage).copyWith(isLoading: null);
+          final index = controller.messages
+              .indexWhere((element) => element.id == message.id);
+          final updatedMessage =
+              (controller.messages[index] as types.FileMessage)
+                  .copyWith(isLoading: null);
 
           controller.updateMessage(index, updatedMessage);
         }
@@ -388,12 +446,12 @@ class ChatScreenHandler extends StatelessWidget {
     }
   }
 
-  void _handlePreviewDataFetched(types.TextMessage message,
-      types.PreviewData previewData) {
+  void _handlePreviewDataFetched(
+      types.TextMessage message, types.PreviewData previewData) {
     final ChatController controller = Get.find<ChatController>();
 
-    final index = controller.messages.indexWhere((element) =>
-    element.id == message.id);
+    final index =
+        controller.messages.indexWhere((element) => element.id == message.id);
 
     final updatedMessage = (controller.messages[index] as types.TextMessage)
         .copyWith(previewData: previewData);
@@ -403,11 +461,12 @@ class ChatScreenHandler extends StatelessWidget {
 
   Widget _bubbleBuilder(Widget child,
       {required types.Message message, required bool nextMessageInGroup}) {
-    final ChatController controller = Get.put(ChatController(Uid),tag: Uid);
+    final ChatController controller =
+        Get.put(ChatController(widget.Uid), tag: widget.Uid);
 
     return Bubble(
       color: controller.user.value.id != message.author.id ||
-          message.type == types.MessageType.image
+              message.type == types.MessageType.image
           ? const Color(0xffa29ae1)
           : const Color(0xff6f61e8),
       margin: nextMessageInGroup
@@ -416,15 +475,14 @@ class ChatScreenHandler extends StatelessWidget {
       nip: nextMessageInGroup
           ? BubbleNip.no
           : controller.user.value.id != message.author.id
-          ? BubbleNip.leftTop
-          : BubbleNip.rightTop,
+              ? BubbleNip.leftTop
+              : BubbleNip.rightTop,
       alignment: controller.user != message.author
-          ?  Alignment.bottomLeft
-          :Alignment.bottomRight,
+          ? Alignment.bottomLeft
+          : Alignment.bottomRight,
       padding: const BubbleEdges.all(8), // Padding for the bubble
       radius: const Radius.circular(20),
       child: child,
     );
   }
-
 }

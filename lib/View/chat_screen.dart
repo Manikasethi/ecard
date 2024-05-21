@@ -3,17 +3,17 @@ import 'package:get/get.dart';
 import '../Controller/ChatScreen/ChatScreenController.dart';
 import '../Resource/color_handler.dart';
 import '../Resource/icon_handler.dart';
-import 'package:Monitor/View/subscreen/Comunity/ChatBotChatScreen.dart';
-import 'package:Monitor/View/subscreen/Comunity/CommunityChatScreen.dart';
-import 'package:Monitor/View/subscreen/Comunity/SocialPost.dart';
 import 'package:Monitor/View/widges/CustomSearchDelegate.dart';
+
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     final ChatScreenController controller = Get.put(ChatScreenController());
+
 
     return Scaffold(
       backgroundColor: ColorHandler.bgColor,
@@ -59,10 +59,26 @@ class ChatScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: TabBarView(
-        controller: controller.tabController,
-        children: controller.screens,
+      body: NestedScrollView(
+       
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+            return [
+              // const SliverAppBar(
+              //   expandedHeight: -300,
+              // ),
+            ];
+          },
+        body: Padding(
+          padding: const EdgeInsets.all(0),
+          child: TabBarView(
+            controller: controller.tabController,
+            children: controller.screens,
+          ),
+        ),
       ),
     );
   }
 }
+
+
+
